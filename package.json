@@ -10,7 +10,7 @@
     "build": "npm run build:react && npm run build:electron",
     "build:react": "vite build",
     "build:electron": "tsc -p electron/tsconfig.json",
-    "package": "electron-builder"
+    "package": "npm run build && electron-builder"
   },
   "keywords": [
     "electron",

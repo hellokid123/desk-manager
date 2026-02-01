@@ -10,8 +10,61 @@ if (!fs.existsSync(cacheDir)) {
 }
 app.setPath('cache', cacheDir);
 
+// 数据存储目录
+const dataDir = path.join(app.getPath('userData'), 'data');
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+}
+const appDataFile = path.join(dataDir, 'appdata.json');
+
+// 数据存储模块
+interface AppData {
+  transparency: number;
+  isLocked: boolean;
+  containers: Array<{ id: string; name: string }>;
+  todos: Array<{
+    id: string;
+    title: string;
+    time: string;
+    description: string;
+    completed: boolean;
+    deleted: boolean;
+  }>;
+  fileManagerHeight: number;
+}
+
+const defaultAppData: AppData = {
+  transparency: 0,
+  isLocked: false,
+  containers: [{ id: '1', name: '文件区 1' }],
+  todos: [],
+  fileManagerHeight: 50,
+};
+
+const loadAppData = (): AppData => {
+  try {
+    if (fs.existsSync(appDataFile)) {
+      const data = fs.readFileSync(appDataFile, 'utf-8');
+      return JSON.parse(data);
+    }
+  } catch (error) {
+    console.error('Failed to load app data:', error);
+  }
+  return defaultAppData;
+};
+
+const saveAppData = (data: AppData) => {
+  try {
+    fs.writeFileSync(appDataFile, JSON.stringify(data, null, 2));
+  } catch (error) {
+    console.error('Failed to save app data:', error);
+  }
+};
+
+let appData = loadAppData();
+
 let mainWindow: BrowserWindow | null = null;
-let isLocked = false;
+let isLocked = appData.isLocked;
 let userDragging = false;
 let moveDebounceTimer: NodeJS.Timeout | null = null;
 let lockedSize: { width: number; height: number } | null = null;
@@ -182,7 +235,17 @@ const createWindow = () => {
 
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    // 生产环境：加载打包后的文件
+    const indexPath = path.join(__dirname, '../dist/index.html');
+    mainWindow.loadFile(indexPath).catch((err) => {
+      console.error('Failed to load index.html:', err);
+      console.error('Looking for file at:', indexPath);
+      // 备选方案：尝试从app.asar.unpacked加载
+      const asarPath = path.join(__dirname, '../../dist/index.html');
+      mainWindow?.loadFile(asarPath).catch((err2) => {
+        console.error('Failed to load from asar path:', err2);
+      });
+    });
   }
 
   applyLockState();
@@ -293,6 +356,8 @@ app.on('window-all-closed', () => {
 // IPC handlers
 ipcMain.handle('toggle-lock', () => {
   isLocked = !isLocked;
+  appData.isLocked = isLocked;
+  saveAppData(appData);
   applyLockState();
   return isLocked;
 });
@@ -304,6 +369,23 @@ ipcMain.handle('get-lock-state', () => {
 ipcMain.handle('set-opacity', (event, opacity: number) => {
   if (mainWindow && typeof opacity === 'number') {
     mainWindow.setOpacity(Math.min(1, Math.max(0, opacity)));
+  }
+});
+
+ipcMain.handle('save-app-data', (event, data: AppData) => {
+  appData = data;
+  isLocked = data.isLocked;
+  saveAppData(data);
+  return true;
+});
+
+ipcMain.handle('load-app-data', () => {
+  return appData;
+});
+
+ipcMain.handle('close-app', () => {
+  if (mainWindow) {
+    mainWindow.close();
   }
 });
 

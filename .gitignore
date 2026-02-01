@@ -26,3 +26,4 @@ nul
 # Electron
 out/
 .claude
+release

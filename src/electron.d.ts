@@ -1,3 +1,18 @@
+interface AppData {
+  transparency: number;
+  isLocked: boolean;
+  containers: Array<{ id: string; name: string }>;
+  todos: Array<{
+    id: string;
+    title: string;
+    time: string;
+    description: string;
+    completed: boolean;
+    deleted: boolean;
+  }>;
+  fileManagerHeight: number;
+}
+
 interface ElectronAPI {
   toggleLock: () => Promise<boolean>;
   getLockState: () => Promise<boolean>;
@@ -6,6 +21,9 @@ interface ElectronAPI {
   setOpacity: (opacity: number) => Promise<void>;
   isDirectory: (filePath: string) => Promise<boolean>;
   getFileIcon: (filePath: string) => Promise<string | null>;
+  saveAppData: (data: AppData) => Promise<boolean>;
+  loadAppData: () => Promise<AppData>;
+  closeApp: () => Promise<void>;
 }
 
 declare global {

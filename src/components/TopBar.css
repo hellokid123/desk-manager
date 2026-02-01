@@ -23,7 +23,8 @@
 }
 
 .lock-button,
-.settings-button {
+.settings-button,
+.close-button {
   width: 32px;
   height: 32px;
   border: none;
@@ -38,9 +39,14 @@
 }
 
 .lock-button:hover,
-.settings-button:hover {
+.settings-button:hover,
+.close-button:hover {
   background: rgba(255, 255, 255, 0.8);
   transform: scale(1.05);
+}
+
+.close-button:hover {
+  background: rgba(255, 100, 100, 0.6);
 }
 
 .lock-button.locked {

@@ -8,6 +8,12 @@ interface TopBarProps {
 }
 
 const TopBar: React.FC<TopBarProps> = ({ isLocked, onToggleLock, onOpenSettings }) => {
+  const handleCloseApp = async () => {
+    if (window.electronAPI) {
+      await window.electronAPI.closeApp();
+    }
+  };
+
   return (
     <div className="top-bar">
       <h1 className="app-title">Desk Manager</h1>
@@ -25,6 +31,13 @@ const TopBar: React.FC<TopBarProps> = ({ isLocked, onToggleLock, onOpenSettings 
           title="设置"
         >
           ⚙️
+        </button>
+        <button
+          className="close-button"
+          onClick={handleCloseApp}
+          title="关闭应用"
+        >
+          ✕
         </button>
       </div>
     </div>

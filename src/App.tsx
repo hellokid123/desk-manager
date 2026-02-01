@@ -29,18 +29,47 @@ const App: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [transparency, setTransparency] = useState(0);
   const [fileManagerHeight, setFileManagerHeight] = useState(50); // 百分比
+  const [isInitialized, setIsInitialized] = useState(false);
 
+  // 初始化：加载保存的数据
   useEffect(() => {
-    // Get initial lock state
-    const getInitialState = async () => {
-      if (window.electronAPI) {
-        const locked = await window.electronAPI.getLockState();
-        setIsLocked(locked);
+    const loadInitialState = async () => {
+      try {
+        if (window.electronAPI) {
+          const savedData = await window.electronAPI.loadAppData();
+          setIsLocked(savedData.isLocked);
+          setContainers(savedData.containers);
+          setTodos(savedData.todos);
+          setTransparency(savedData.transparency);
+          setFileManagerHeight(savedData.fileManagerHeight);
+          setIsInitialized(true);
+        }
+      } catch (error) {
+        console.error('Failed to load app data:', error);
+        setIsInitialized(true);
       }
     };
-    getInitialState();
+    loadInitialState();
   }, []);
 
+  // 监听状态变化并保存数据（不在初始化时保存）
+  useEffect(() => {
+    if (!isInitialized) return;
+
+    const saveData = async () => {
+      if (window.electronAPI) {
+        await window.electronAPI.saveAppData({
+          transparency,
+          isLocked,
+          containers,
+          todos,
+          fileManagerHeight,
+        });
+      }
+    };
+
+    saveData();
+  }, [transparency, isLocked, containers, todos, fileManagerHeight, isInitialized]);
 
   useEffect(() => {
     // Check for todo notifications
