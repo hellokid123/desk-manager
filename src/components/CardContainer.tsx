@@ -7,6 +7,7 @@ interface Card {
   name: string;
   type: 'file' | 'folder';
   path?: string;
+  iconPath?: string | null;
 }
 
 interface CardContainerProps {
@@ -14,29 +15,63 @@ interface CardContainerProps {
   name: string;
 }
 
-const CardContainer: React.FC<CardContainerProps> = ({ id, name }) => {
+const CardContainer: React.FC<CardContainerProps> = ({ name }) => {
   const [cards, setCards] = useState<Card[]>([]);
   const [isHovering, setIsHovering] = useState(false);
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setIsHovering(false);
-    
+
     // 支持多文件拖拽
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0) {
-      const newCards: Card[] = files.map(file => {
+      const newCards: Card[] = [];
+
+      for (const file of files) {
         // @ts-ignore - Electron file object has 'path' property
-        const filePath = file.path; 
-        const isFolder = !file.type; // 简单判断，文件夹通常没有 mime type
-        
-        return {
+        const filePath = file.path;
+        console.log(`Processing file: ${file.name}, path: ${filePath}`);
+
+        // 通过 Electron API 检查是否为文件夹
+        let isFolder = false;
+        try {
+          if (window.electronAPI?.isDirectory) {
+            isFolder = await window.electronAPI.isDirectory(filePath);
+            console.log(`Is directory: ${isFolder}`);
+          } else {
+            isFolder = !file.type;
+            console.log(`Using file.type fallback for: ${file.name}`);
+          }
+        } catch (error) {
+          console.error(`Error checking if directory: ${file.name}`, error);
+          isFolder = !file.type;
+        }
+
+        // 获取文件图标（仅对文件）
+        let iconPath: string | null | undefined;
+        if (!isFolder && window.electronAPI?.getFileIcon) {
+          try {
+            console.log(`Getting icon for file: ${filePath}`);
+            iconPath = await window.electronAPI.getFileIcon(filePath);
+            if (iconPath) {
+              console.log(`Successfully got icon for: ${file.name}`);
+            } else {
+              console.warn(`Failed to get icon for: ${file.name}`);
+            }
+          } catch (error) {
+            console.error(`Error getting icon for ${file.name}:`, error);
+          }
+        }
+
+        newCards.push({
           id: Date.now().toString() + Math.random().toString(),
           name: file.name,
           type: isFolder ? 'folder' : 'file',
-          path: filePath
-        };
-      });
+          path: filePath,
+          iconPath: iconPath
+        });
+      }
       setCards(prev => [...prev, ...newCards]);
       return;
     }

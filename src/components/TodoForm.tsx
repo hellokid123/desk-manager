@@ -10,19 +10,55 @@ interface Todo {
 interface TodoFormProps {
   onSubmit: (todo: Todo) => void;
   onCancel: () => void;
+  initialTodo?: Todo;
 }
 
-const TodoForm: React.FC<TodoFormProps> = ({ onSubmit, onCancel }) => {
-  const [title, setTitle] = useState('');
-  const [time, setTime] = useState('');
-  const [description, setDescription] = useState('');
+const TodoForm: React.FC<TodoFormProps> = ({ onSubmit, onCancel, initialTodo }) => {
+  // 获取当前日期和时间
+  const getDefaultDateTime = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const date = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${date}T${hours}:${minutes}`;
+  };
+
+  const getDefaultTime = () => {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
+  const getTodayDateString = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const date = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${date}`;
+  };
+
+  const [title, setTitle] = useState(initialTodo?.title || '');
+  const [time, setTime] = useState(() => {
+    if (initialTodo?.time) {
+      // 从datetime-local格式提取时间部分 (HH:mm)
+      return initialTodo.time.split('T')[1]?.slice(0, 5) || getDefaultTime();
+    }
+    return getDefaultTime();
+  });
+  const [description, setDescription] = useState(initialTodo?.description || '');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (title.trim()) {
+      // 如果是编辑，使用选择的时间；如果是新建，使用当前时间
+      const dateTime = initialTodo ? `${getTodayDateString()}T${time}` : getDefaultDateTime();
+
       onSubmit({
         title: title.trim(),
-        time,
+        time: dateTime,
         description: description.trim(),
       });
     }
@@ -38,12 +74,14 @@ const TodoForm: React.FC<TodoFormProps> = ({ onSubmit, onCancel }) => {
         className="todo-form-input"
         required
       />
-      <input
-        type="datetime-local"
-        value={time}
-        onChange={(e) => setTime(e.target.value)}
-        className="todo-form-input"
-      />
+      {initialTodo && (
+        <input
+          type="time"
+          value={time}
+          onChange={(e) => setTime(e.target.value)}
+          className="todo-form-input"
+        />
+      )}
       <textarea
         placeholder="任务描述（可选）"
         value={description}
@@ -53,7 +91,7 @@ const TodoForm: React.FC<TodoFormProps> = ({ onSubmit, onCancel }) => {
       />
       <div className="todo-form-buttons">
         <button type="submit" className="todo-form-submit">
-          添加
+          {initialTodo ? '保存' : '添加'}
         </button>
         <button type="button" className="todo-form-cancel" onClick={onCancel}>
           取消

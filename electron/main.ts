@@ -1,5 +1,14 @@
-import { app, BrowserWindow, screen, ipcMain, Notification, shell } from 'electron';
+import { app, BrowserWindow, screen, ipcMain, Notification, shell, nativeImage } from 'electron';
 import * as path from 'path';
+import * as fs from 'fs';
+import * as os from 'os';
+
+// 设置缓存目录到应用数据目录
+const cacheDir = path.join(app.getPath('userData'), 'cache');
+if (!fs.existsSync(cacheDir)) {
+  fs.mkdirSync(cacheDir, { recursive: true });
+}
+app.setPath('cache', cacheDir);
 
 let mainWindow: BrowserWindow | null = null;
 let isLocked = false;
@@ -311,4 +320,111 @@ ipcMain.handle('open-path', async (event, filePath: string) => {
     return;
   }
   return shell.openPath(filePath);
+});
+
+ipcMain.handle('is-directory', async (event, filePath: string) => {
+  try {
+    const stats = await fs.promises.stat(filePath);
+    return stats.isDirectory();
+  } catch {
+    return false;
+  }
+});
+
+// 获取文件的系统图标 - 基于扩展名
+const getFileIconByExtension = (filePath: string): string | null => {
+  const ext = path.extname(filePath).toLowerCase();
+
+  const iconMap: { [key: string]: string } = {
+    // 应用程序
+    '.exe': '⚙️',
+    '.msi': '📦',
+    '.app': '📱',
+    '.apk': '📱',
+
+    // 文档
+    '.pdf': '📄',
+    '.doc': '📝',
+    '.docx': '📝',
+    '.xls': '📊',
+    '.xlsx': '📊',
+    '.ppt': '🎞️',
+    '.pptx': '🎞️',
+    '.txt': '📄',
+    '.rtf': '📄',
+
+    // 图像
+    '.jpg': '🖼️',
+    '.jpeg': '🖼️',
+    '.png': '🖼️',
+    '.gif': '🖼️',
+    '.bmp': '🖼️',
+    '.svg': '🖼️',
+
+    // 视频
+    '.mp4': '🎬',
+    '.avi': '🎬',
+    '.mkv': '🎬',
+    '.mov': '🎬',
+    '.flv': '🎬',
+    '.wmv': '🎬',
+    '.webm': '🎬',
+
+    // 音频
+    '.mp3': '🎵',
+    '.wav': '🎵',
+    '.flac': '🎵',
+    '.aac': '🎵',
+    '.wma': '🎵',
+    '.m4a': '🎵',
+
+    // 压缩包
+    '.zip': '🗜️',
+    '.rar': '🗜️',
+    '.7z': '🗜️',
+    '.tar': '🗜️',
+    '.gz': '🗜️',
+
+    // 代码
+    '.js': '</>',
+    '.ts': '</>',
+    '.py': '</>',
+    '.java': '</>',
+    '.cpp': '</>',
+    '.c': '</>',
+    '.html': '</>',
+    '.css': '</>',
+    '.json': '</>',
+    '.xml': '</>',
+
+    // 快捷方式
+    '.lnk': '🔗',
+  };
+
+  return iconMap[ext] || null;
+};
+
+ipcMain.handle('get-file-icon', async (event, filePath: string) => {
+  try {
+    // 检查文件是否存在
+    const exists = fs.existsSync(filePath);
+    if (!exists) {
+      console.warn(`File not found: ${filePath}`);
+      return null;
+    }
+
+    // 根据文件扩展名获取对应的 emoji 图标
+    const icon = getFileIconByExtension(filePath);
+    if (icon) {
+      console.log(`Got icon for ${path.basename(filePath)}: ${icon}`);
+      return icon;
+    }
+
+    // 如果没有找到特定的图标映射，返回通用图标
+    console.log(`No specific icon found for: ${path.basename(filePath)}, using default`);
+    return null;
+  } catch (error) {
+    console.error(`Error getting icon for ${filePath}:`, error);
+    return null;
+  }
 });

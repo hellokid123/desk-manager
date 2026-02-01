@@ -17,18 +17,7 @@ interface Todo {
   time: string;
   description: string;
   completed: boolean;
-}
-
-declare global {
-  interface Window {
-    electronAPI?: {
-      toggleLock: () => Promise<boolean>;
-      getLockState: () => Promise<boolean>;
-      showNotification: (title: string, body: string) => Promise<void>;
-      openPath: (filePath: string) => Promise<void>;
-      setOpacity?: (opacity: number) => Promise<void>;
-    };
-  }
+  deleted: boolean;
 }
 
 const App: React.FC = () => {
@@ -39,6 +28,7 @@ const App: React.FC = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [showSettings, setShowSettings] = useState(false);
   const [transparency, setTransparency] = useState(0);
+  const [fileManagerHeight, setFileManagerHeight] = useState(50); // 百分比
 
   useEffect(() => {
     // Get initial lock state
@@ -88,11 +78,12 @@ const App: React.FC = () => {
     setContainers([...containers, { id: newId, name: `文件区 ${containers.length + 1}` }]);
   };
 
-  const handleAddTodo = (todo: Omit<Todo, 'id' | 'completed'>) => {
+  const handleAddTodo = (todo: Omit<Todo, 'id' | 'completed' | 'deleted'>) => {
     const newTodo: Todo = {
       ...todo,
       id: Date.now().toString(),
       completed: false,
+      deleted: false,
     };
     setTodos([...todos, newTodo]);
   };
@@ -104,11 +95,50 @@ const App: React.FC = () => {
   };
 
   const handleDeleteTodo = (id: string) => {
-    setTodos(todos.filter(todo => todo.id !== id));
+    setTodos(todos.map(todo =>
+      todo.id === id ? { ...todo, deleted: true } : todo
+    ));
+  };
+
+  const handleEditTodo = (updatedTodo: Todo) => {
+    setTodos(todos.map(todo =>
+      todo.id === updatedTodo.id ? updatedTodo : todo
+    ));
+  };
+
+  const handleRestoreTodo = (id: string) => {
+    setTodos(todos.map(todo =>
+      todo.id === id ? { ...todo, deleted: false } : todo
+    ));
   };
 
   const handleTransparencyChange = (value: number) => {
     setTransparency(value);
+  };
+
+  const handleMouseDownDivider = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startHeight = fileManagerHeight;
+    const mainContent = document.querySelector('.main-content') as HTMLElement;
+    if (!mainContent) return;
+    const totalHeight = mainContent.clientHeight;
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const deltaY = moveEvent.clientY - startY;
+      const newHeight = startHeight + (deltaY / totalHeight) * 100;
+      // 限制高度范围：最小 20%，最大 80%
+      const clampedHeight = Math.max(20, Math.min(80, newHeight));
+      setFileManagerHeight(clampedHeight);
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
   };
 
   const bgOpacity = (100 - transparency) / 100;
@@ -127,17 +157,28 @@ const App: React.FC = () => {
       />
 
       <div className="main-content">
-        <FileManager
-          containers={containers}
-          onAddContainer={handleAddContainer}
+        <div style={{ flex: fileManagerHeight / 100 }}>
+          <FileManager
+            containers={containers}
+            onAddContainer={handleAddContainer}
+          />
+        </div>
+
+        <div
+          className="divider"
+          onMouseDown={handleMouseDownDivider}
         />
 
-        <TodoList
-          todos={todos}
-          onAddTodo={handleAddTodo}
-          onToggleTodo={handleToggleTodo}
-          onDeleteTodo={handleDeleteTodo}
-        />
+        <div style={{ flex: (100 - fileManagerHeight) / 100 }}>
+          <TodoList
+            todos={todos}
+            onAddTodo={handleAddTodo}
+            onToggleTodo={handleToggleTodo}
+            onDeleteTodo={handleDeleteTodo}
+            onEditTodo={handleEditTodo}
+            onRestoreTodo={handleRestoreTodo}
+          />
+        </div>
       </div>
 
       {showSettings && (

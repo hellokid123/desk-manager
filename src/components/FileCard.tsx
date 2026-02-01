@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './FileCard.css';
 
 interface Card {
@@ -6,6 +6,7 @@ interface Card {
   name: string;
   type: 'file' | 'folder';
   path?: string;
+  iconPath?: string | null;
 }
 
 interface FileCardProps {
@@ -23,7 +24,13 @@ const FileCard: React.FC<FileCardProps> = ({ card, onRemove }) => {
   return (
     <div className="file-card" onDoubleClick={handleDoubleClick}>
       <div className="file-card-icon">
-        {card.type === 'folder' ? '📁' : '📄'}
+        {card.type === 'folder' ? (
+          '📁'
+        ) : card.iconPath ? (
+          card.iconPath
+        ) : (
+          '📄'
+        )}
       </div>
       <div className="file-card-name" title={card.name}>
         {card.name}
