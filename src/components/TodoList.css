@@ -91,3 +91,41 @@
   background: rgba(0, 0, 0, 0.2);
   border-radius: 2px;
 }
+
+/* 拖拽样式 */
+.todo-item-wrapper {
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.todo-item-wrapper[draggable="true"] {
+  cursor: grab;
+}
+
+.todo-item-wrapper[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.todo-item-wrapper.dragging {
+  opacity: 0.5;
+  transform: scale(0.95);
+}
+
+.todo-item-wrapper.drag-over-top {
+  background: rgba(100, 150, 255, 0.15);
+  border-radius: 4px;
+  margin-top: 12px;
+  padding-top: 8px;
+}
+
+.todo-item-wrapper.drag-over-bottom {
+  background: rgba(100, 150, 255, 0.15);
+  border-radius: 4px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+}
+
+.todo-item-wrapper:hover[draggable="true"] {
+  background: rgba(100, 150, 255, 0.08);
+  border-radius: 4px;
+}

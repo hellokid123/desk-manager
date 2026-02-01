@@ -13,6 +13,8 @@ interface AppData {
     deleted: boolean;
   }>;
   fileManagerHeight: number;
+  windowSize: { width: number; height: number };
+  windowPosition: { x: number; y: number };
 }
 
 interface ElectronAPI {

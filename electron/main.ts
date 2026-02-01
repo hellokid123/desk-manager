@@ -31,6 +31,8 @@ interface AppData {
     deleted: boolean;
   }>;
   fileManagerHeight: number;
+  windowSize: { width: number; height: number };
+  windowPosition: { x: number; y: number };
 }
 
 const defaultAppData: AppData = {
@@ -39,13 +41,22 @@ const defaultAppData: AppData = {
   containers: [{ id: '1', name: '文件区 1' }],
   todos: [],
   fileManagerHeight: 50,
+  windowSize: { width: 350, height: 700 },
+  windowPosition: { x: 1000, y: 100 },
 };
 
 const loadAppData = (): AppData => {
   try {
     if (fs.existsSync(appDataFile)) {
       const data = fs.readFileSync(appDataFile, 'utf-8');
-      return JSON.parse(data);
+      const parsedData = JSON.parse(data);
+      // 合并默认值，确保所有必要的字段存在
+      return {
+        ...defaultAppData,
+        ...parsedData,
+        windowSize: parsedData.windowSize || defaultAppData.windowSize,
+        windowPosition: parsedData.windowPosition || defaultAppData.windowPosition,
+      };
     }
   } catch (error) {
     console.error('Failed to load app data:', error);
@@ -198,11 +209,24 @@ const applyLockState = () => {
 };
 
 const createWindow = () => {
+  // 计算窗口位置，如果保存的位置超出屏幕范围则使用默认值
+  const workArea = screen.getPrimaryDisplay().workAreaSize;
+  let posX = appData.windowPosition.x;
+  let posY = appData.windowPosition.y;
+
+  // 验证位置是否有效
+  if (posX < 0 || posX + appData.windowSize.width > workArea.width) {
+    posX = workArea.width - appData.windowSize.width;
+  }
+  if (posY < 0 || posY + appData.windowSize.height > workArea.height) {
+    posY = 100;
+  }
+
   mainWindow = new BrowserWindow({
-    width: 350,
-    height: 700,
-    x: screen.getPrimaryDisplay().workAreaSize.width - 350,
-    y: 100,
+    width: appData.windowSize.width,
+    height: appData.windowSize.height,
+    x: posX,
+    y: posY,
     frame: false,
     transparent: true,
     backgroundColor: '#00000000',
@@ -250,7 +274,7 @@ const createWindow = () => {
 
   applyLockState();
 
-  lastFreeSize = { width: 350, height: 700 };
+  lastFreeSize = { width: appData.windowSize.width, height: appData.windowSize.height };
 
   mainWindow.on('resize', () => {
     if (!mainWindow || isLocked || isRestoringSize || isAutoHidden) return;
@@ -272,6 +296,7 @@ const createWindow = () => {
   });
 
   let processingMove = false;
+  let saveConfigTimer: NodeJS.Timeout | null = null;
 
   mainWindow.on('move', () => {
     if (!mainWindow || processingMove || isAutoHidden) return;
@@ -304,8 +329,43 @@ const createWindow = () => {
       }
       if (moveDebounceTimer) clearTimeout(moveDebounceTimer);
       moveDebounceTimer = setTimeout(() => { userDragging = false; }, 150);
+
+      // 保存窗口位置
+      if (saveConfigTimer) clearTimeout(saveConfigTimer);
+      saveConfigTimer = setTimeout(() => {
+        const bounds = mainWindow!.getBounds();
+        appData.windowPosition = { x: bounds.x, y: bounds.y };
+        saveAppData(appData);
+      }, 500);
     } finally {
       processingMove = false;
+    }
+  });
+
+  // 监听窗口大小变化
+  mainWindow.on('resize', () => {
+    if (!mainWindow || isLocked || isRestoringSize || isAutoHidden) return;
+    const workArea = screen.getPrimaryDisplay().workAreaSize;
+    const b = mainWindow.getBounds();
+    const margin = 1;
+    const atEdge =
+      b.x < margin ||
+      b.y < margin ||
+      b.x + b.width > workArea.width - margin ||
+      b.y + b.height > workArea.height - margin;
+    if (atEdge && lastFreeSize) {
+      isRestoringSize = true;
+      mainWindow.setBounds({ x: b.x, y: b.y, width: lastFreeSize.width, height: lastFreeSize.height });
+      setImmediate(() => { isRestoringSize = false; });
+    } else {
+      lastFreeSize = { width: b.width, height: b.height };
+      // 保存窗口大小
+      if (saveConfigTimer) clearTimeout(saveConfigTimer);
+      saveConfigTimer = setTimeout(() => {
+        const bounds = mainWindow!.getBounds();
+        appData.windowSize = { width: bounds.width, height: bounds.height };
+        saveAppData(appData);
+      }, 500);
     }
   });
 

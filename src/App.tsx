@@ -18,6 +18,7 @@ interface Todo {
   description: string;
   completed: boolean;
   deleted: boolean;
+  order: number;
 }
 
 const App: React.FC = () => {
@@ -39,7 +40,12 @@ const App: React.FC = () => {
           const savedData = await window.electronAPI.loadAppData();
           setIsLocked(savedData.isLocked);
           setContainers(savedData.containers);
-          setTodos(savedData.todos);
+          // 确保 todos 有 order 字段
+          const todosWithOrder = savedData.todos.map((todo: any, index: number) => ({
+            ...todo,
+            order: todo.order ?? index,
+          }));
+          setTodos(todosWithOrder);
           setTransparency(savedData.transparency);
           setFileManagerHeight(savedData.fileManagerHeight);
           setIsInitialized(true);
@@ -64,6 +70,8 @@ const App: React.FC = () => {
           containers,
           todos,
           fileManagerHeight,
+          windowSize: { width: 0, height: 0 },
+          windowPosition: { x: 0, y: 0 },
         });
       }
     };
@@ -107,14 +115,19 @@ const App: React.FC = () => {
     setContainers([...containers, { id: newId, name: `文件区 ${containers.length + 1}` }]);
   };
 
-  const handleAddTodo = (todo: Omit<Todo, 'id' | 'completed' | 'deleted'>) => {
+  const handleAddTodo = (todo: Omit<Todo, 'id' | 'completed' | 'deleted' | 'order'>) => {
     const newTodo: Todo = {
       ...todo,
       id: Date.now().toString(),
       completed: false,
       deleted: false,
+      order: Math.max(...todos.map(t => t.order), 0) + 1,
     };
     setTodos([...todos, newTodo]);
+  };
+
+  const handleReorderTodos = (reorderedTodos: Todo[]) => {
+    setTodos(reorderedTodos);
   };
 
   const handleToggleTodo = (id: string) => {
@@ -206,6 +219,7 @@ const App: React.FC = () => {
             onDeleteTodo={handleDeleteTodo}
             onEditTodo={handleEditTodo}
             onRestoreTodo={handleRestoreTodo}
+            onReorder={handleReorderTodos}
           />
         </div>
       </div>

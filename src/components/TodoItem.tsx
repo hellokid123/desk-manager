@@ -9,6 +9,7 @@ interface Todo {
   description: string;
   completed: boolean;
   deleted: boolean;
+  order: number;
 }
 
 interface TodoItemProps {
@@ -17,10 +18,13 @@ interface TodoItemProps {
   onDelete: () => void;
   onEdit: (todo: Todo) => void;
   onRestore?: () => void;
+  isEditing: boolean;
+  onStartEditing: () => void;
+  onFinishEditing: () => void;
 }
 
-const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit, onRestore }) => {
-  const [isEditing, setIsEditing] = useState(false);
+const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit, onRestore, isEditing, onStartEditing, onFinishEditing }) => {
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
 
   const formatTime = (time: string) => {
     const date = new Date(time);
@@ -39,14 +43,34 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit, o
     return timeDiff > 0 && timeDiff <= 60 * 60 * 1000; // Within 1 hour
   };
 
-  const handleEditSubmit = (editedTodo: Omit<Todo, 'id' | 'completed'>) => {
+  const handleEditSubmit = (editedTodo: Omit<Todo, 'id' | 'completed' | 'order' | 'deleted'>) => {
     onEdit({
       ...todo,
       title: editedTodo.title,
       time: editedTodo.time,
       description: editedTodo.description,
     });
-    setIsEditing(false);
+    onFinishEditing();
+  };
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setContextMenu({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleDeleteFromMenu = () => {
+    onDelete();
+    setContextMenu(null);
+  };
+
+  const handleRestoreFromMenu = () => {
+    onRestore?.();
+    setContextMenu(null);
+  };
+
+  // 点击其他地方关闭菜单
+  const handleMenuClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
   };
 
   if (isEditing) {
@@ -55,14 +79,18 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit, o
         <TodoForm
           initialTodo={todo}
           onSubmit={handleEditSubmit}
-          onCancel={() => setIsEditing(false)}
+          onCancel={onFinishEditing}
         />
       </div>
     );
   }
 
   return (
-    <div className={`todo-item ${todo.completed ? 'completed' : ''} ${isUrgent() ? 'urgent' : ''}`}>
+    <div
+      className={`todo-item ${todo.completed ? 'completed' : ''} ${isUrgent() ? 'urgent' : ''}`}
+      onContextMenu={handleContextMenu}
+      onClick={() => contextMenu && setContextMenu(null)}
+    >
       <div className="todo-item-header">
         {!todo.deleted && (
           <input
@@ -72,24 +100,34 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit, o
             className="todo-checkbox"
           />
         )}
-        <div className="todo-info" onClick={() => !todo.deleted && setIsEditing(true)} style={{ cursor: todo.deleted ? 'default' : 'pointer' }}>
+        <div className="todo-info" onClick={() => !todo.deleted && onStartEditing()} style={{ cursor: todo.deleted ? 'default' : 'pointer' }}>
           <h4 className="todo-title">{todo.title}</h4>
           {todo.time && (
             <span className="todo-time">{formatTime(todo.time)}</span>
           )}
         </div>
-        {todo.deleted ? (
-          <button className="todo-restore" onClick={onRestore} title="恢复">
-            ↻
-          </button>
-        ) : (
-          <button className="todo-delete" onClick={onDelete} title="删除">
-            ×
-          </button>
-        )}
       </div>
       {todo.description && (
         <p className="todo-description">{todo.description}</p>
+      )}
+
+      {/* 右键菜单 */}
+      {contextMenu && (
+        <div
+          className="todo-context-menu"
+          style={{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }}
+          onClick={handleMenuClick}
+        >
+          {todo.deleted ? (
+            <button className="context-menu-item restore" onClick={handleRestoreFromMenu}>
+              恢复
+            </button>
+          ) : (
+            <button className="context-menu-item delete" onClick={handleDeleteFromMenu}>
+              删除
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
