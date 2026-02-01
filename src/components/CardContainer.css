@@ -1,0 +1,28 @@
+.card-container {
+  background: transparent;
+  border-radius: 10px;
+  padding: 10px;
+  border: none;
+  transition: all 0.2s ease;
+  min-height: 100px;
+}
+
+.card-container:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.card-container-header {
+  display: none;
+}
+
+.card-container-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  min-height: 100px;
+  align-items: flex-start;
+}
+
+.empty-state {
+  display: none;
+}

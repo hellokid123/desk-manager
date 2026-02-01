@@ -1,0 +1,76 @@
+.todo-form {
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.todo-form-input {
+  padding: 8px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.8);
+  transition: all 0.2s ease;
+}
+
+.todo-form-input:focus {
+  outline: none;
+  border-color: rgba(100, 150, 255, 0.5);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.todo-form-textarea {
+  padding: 8px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  background: rgba(255, 255, 255, 0.8);
+  resize: vertical;
+  transition: all 0.2s ease;
+}
+
+.todo-form-textarea:focus {
+  outline: none;
+  border-color: rgba(100, 150, 255, 0.5);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.todo-form-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.todo-form-submit,
+.todo-form-cancel {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.todo-form-submit {
+  background: rgba(100, 200, 100, 0.5);
+  color: #333;
+}
+
+.todo-form-submit:hover {
+  background: rgba(100, 200, 100, 0.7);
+}
+
+.todo-form-cancel {
+  background: rgba(200, 200, 200, 0.5);
+  color: #333;
+}
+
+.todo-form-cancel:hover {
+  background: rgba(200, 200, 200, 0.7);
+}

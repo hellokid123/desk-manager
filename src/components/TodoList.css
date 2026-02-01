@@ -1,0 +1,63 @@
+.todo-list {
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 10px;
+  padding: 15px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+.todo-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.todo-list-header h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #444;
+  margin: 0;
+}
+
+.add-todo-button {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: rgba(100, 200, 100, 0.4);
+  border-radius: 6px;
+  color: #333;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.add-todo-button:hover {
+  background: rgba(100, 200, 100, 0.6);
+  transform: scale(1.1);
+}
+
+.todo-list-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.todo-list-body::-webkit-scrollbar {
+  width: 4px;
+}
+
+.todo-list-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.todo-list-body::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+}
