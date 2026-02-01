@@ -17,10 +17,10 @@
 
 .card-container-body {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+  flex-direction: column;
+  gap: 0;
   min-height: 100px;
-  align-items: flex-start;
+  align-items: stretch;
 }
 
 .empty-state {

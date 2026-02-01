@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import TodoForm from './TodoForm';
 import './TodoItem.css';
 
@@ -53,6 +53,20 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit, o
     onFinishEditing();
   };
 
+  // 点击任何地方关闭菜单
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setContextMenu(null);
+    };
+
+    if (contextMenu) {
+      document.addEventListener('click', handleClickOutside);
+      return () => {
+        document.removeEventListener('click', handleClickOutside);
+      };
+    }
+  }, [contextMenu]);
+
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     setContextMenu({ x: e.clientX, y: e.clientY });
@@ -89,7 +103,6 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit, o
     <div
       className={`todo-item ${todo.completed ? 'completed' : ''} ${isUrgent() ? 'urgent' : ''}`}
       onContextMenu={handleContextMenu}
-      onClick={() => contextMenu && setContextMenu(null)}
     >
       <div className="todo-item-header">
         {!todo.deleted && (
