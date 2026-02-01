@@ -51,12 +51,6 @@ const App: React.FC = () => {
     getInitialState();
   }, []);
 
-  useEffect(() => {
-    const opacity = (100 - transparency) / 100;
-    if (window.electronAPI?.setOpacity) {
-      window.electronAPI.setOpacity(opacity);
-    }
-  }, [transparency]);
 
   useEffect(() => {
     // Check for todo notifications
@@ -115,15 +109,14 @@ const App: React.FC = () => {
 
   const handleTransparencyChange = (value: number) => {
     setTransparency(value);
-    const opacity = (100 - value) / 100;
-    if (window.electronAPI?.setOpacity) {
-      window.electronAPI.setOpacity(opacity);
-    }
   };
+
+  const bgOpacity = (100 - transparency) / 100;
 
   return (
     <div
       className={`app ${isLocked ? 'locked' : ''}`}
+      style={{ backgroundColor: `rgba(255, 255, 255, ${bgOpacity})` }}
     >
       <ResizeFrame isLocked={isLocked} />
 

@@ -42,8 +42,8 @@ const createWindow = () => {
     x: screen.getPrimaryDisplay().workAreaSize.width - 350,
     y: 100,
     frame: false,
-    transparent: false,
-    backgroundColor: '#ffffff',
+    transparent: true,
+    backgroundColor: '#00000000',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -79,7 +79,6 @@ const createWindow = () => {
   applyLockState();
 
   lastFreeSize = { width: 350, height: 700 };
-  mainWindow.setOpacity(1);
 
   mainWindow.on('resize', () => {
     if (!mainWindow || isLocked || isRestoringSize) return;
