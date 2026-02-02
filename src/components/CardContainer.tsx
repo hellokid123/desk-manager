@@ -55,7 +55,8 @@ const CardContainer: React.FC<CardContainerProps> = ({ name }) => {
             console.log(`Getting icon for file: ${filePath}`);
             iconPath = await window.electronAPI.getFileIcon(filePath);
             if (iconPath) {
-              console.log(`Successfully got icon for: ${file.name}`);
+              console.log(`Successfully got icon for: ${file.name}, icon length: ${iconPath.length}`);
+              console.log(`Icon preview: ${iconPath.substring(0, 100)}...`);
             } else {
               console.warn(`Failed to get icon for: ${file.name}`);
             }

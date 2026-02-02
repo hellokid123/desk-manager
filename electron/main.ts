@@ -555,15 +555,29 @@ ipcMain.handle('get-file-icon', async (event, filePath: string) => {
       return null;
     }
 
-    // 根据文件扩展名获取对应的 emoji 图标
-    const icon = getFileIconByExtension(filePath);
-    if (icon) {
-      console.log(`Got icon for ${path.basename(filePath)}: ${icon}`);
-      return icon;
+    try {
+      // 使用 Electron 的 getFileIcon 获取文件图标
+      const icon = await app.getFileIcon(filePath, { size: 'large' });
+      if (icon && !icon.isEmpty()) {
+        // 直接转换为 base64 data URL
+        const pngBuffer = icon.toPNG();
+        const base64 = pngBuffer.toString('base64');
+        const dataUrl = `data:image/png;base64,${base64}`;
+        console.log(`Got icon for ${path.basename(filePath)}, size: ${pngBuffer.length} bytes`);
+        return dataUrl;
+      }
+    } catch (error) {
+      console.warn(`Failed to get icon for ${filePath}:`, error);
     }
 
-    // 如果没有找到特定的图标映射，返回通用图标
-    console.log(`No specific icon found for: ${path.basename(filePath)}, using default`);
+    // 降级方案：使用 emoji 图标
+    const emoji = getFileIconByExtension(filePath);
+    if (emoji) {
+      console.log(`Using emoji icon for ${path.basename(filePath)}: ${emoji}`);
+      return emoji;
+    }
+
+    console.log(`No icon found for: ${path.basename(filePath)}`);
     return null;
   } catch (error) {
     console.error(`Error getting icon for ${filePath}:`, error);

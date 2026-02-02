@@ -16,6 +16,7 @@ interface FileCardProps {
 
 const FileCard: React.FC<FileCardProps> = ({ card, onRemove }) => {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   const handleDoubleClick = () => {
     if (card.path && window.electronAPI?.openPath) {
@@ -61,7 +62,35 @@ const FileCard: React.FC<FileCardProps> = ({ card, onRemove }) => {
         {card.type === 'folder' ? (
           '📁'
         ) : card.iconPath ? (
-          card.iconPath
+          // 判断是否为 data URL 或 emoji
+          card.iconPath.startsWith('data:') ? (
+            <>
+              <img
+                src={card.iconPath}
+                alt={card.name}
+                style={{
+                  width: '28px',
+                  height: '28px',
+                  objectFit: 'contain',
+                  display: imageLoaded ? 'block' : 'none',
+                  imageRendering: 'crisp-edges'
+                }}
+                onError={() => {
+                  console.error('Failed to load icon image:', card.name);
+                  setImageLoaded(false);
+                }}
+                onLoad={() => {
+                  console.log('Icon loaded successfully:', card.name);
+                  setImageLoaded(true);
+                }}
+              />
+              {!imageLoaded && <span style={{ fontSize: '18px' }}>📄</span>}
+            </>
+          ) : (
+            <span style={{ fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {card.iconPath}
+            </span>
+          )
         ) : (
           '📄'
         )}
