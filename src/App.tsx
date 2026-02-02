@@ -71,7 +71,6 @@ const App: React.FC = () => {
           todos,
           fileManagerHeight,
           windowSize: { width: 0, height: 0 },
-          windowPosition: { x: 0, y: 0 },
         });
       }
     };

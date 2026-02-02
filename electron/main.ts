@@ -32,7 +32,6 @@ interface AppData {
   }>;
   fileManagerHeight: number;
   windowSize: { width: number; height: number };
-  windowPosition: { x: number; y: number };
 }
 
 const defaultAppData: AppData = {
@@ -42,7 +41,6 @@ const defaultAppData: AppData = {
   todos: [],
   fileManagerHeight: 50,
   windowSize: { width: 350, height: 700 },
-  windowPosition: { x: -1, y: -1 },  // -1 表示首次启动时将在屏幕中间
 };
 
 const loadAppData = (): AppData => {
@@ -55,7 +53,6 @@ const loadAppData = (): AppData => {
         ...defaultAppData,
         ...parsedData,
         windowSize: parsedData.windowSize || defaultAppData.windowSize,
-        windowPosition: parsedData.windowPosition || defaultAppData.windowPosition,
       };
     }
   } catch (error) {
@@ -209,18 +206,10 @@ const applyLockState = () => {
 };
 
 const createWindow = () => {
-  // 计算窗口位置，如果保存的位置超出屏幕范围则使用默认值
+  // 每次启动都在屏幕中央弹出
   const workArea = screen.getPrimaryDisplay().workAreaSize;
-  let posX = appData.windowPosition.x;
-  let posY = appData.windowPosition.y;
-
-  // 验证位置是否有效
-  if (posX < 0 || posX + appData.windowSize.width > workArea.width) {
-    posX = Math.max(0, (workArea.width - appData.windowSize.width) / 2);
-  }
-  if (posY < 0 || posY + appData.windowSize.height > workArea.height) {
-    posY = Math.max(0, (workArea.height - appData.windowSize.height) / 2);
-  }
+  const posX = Math.max(0, (workArea.width - appData.windowSize.width) / 2);
+  const posY = Math.max(0, (workArea.height - appData.windowSize.height) / 2);
 
   mainWindow = new BrowserWindow({
     width: appData.windowSize.width,
@@ -329,14 +318,6 @@ const createWindow = () => {
       }
       if (moveDebounceTimer) clearTimeout(moveDebounceTimer);
       moveDebounceTimer = setTimeout(() => { userDragging = false; }, 150);
-
-      // 保存窗口位置
-      if (saveConfigTimer) clearTimeout(saveConfigTimer);
-      saveConfigTimer = setTimeout(() => {
-        const bounds = mainWindow!.getBounds();
-        appData.windowPosition = { x: bounds.x, y: bounds.y };
-        saveAppData(appData);
-      }, 500);
     } finally {
       processingMove = false;
     }
