@@ -42,7 +42,7 @@ const defaultAppData: AppData = {
   todos: [],
   fileManagerHeight: 50,
   windowSize: { width: 350, height: 700 },
-  windowPosition: { x: 1000, y: 100 },
+  windowPosition: { x: -1, y: -1 },  // -1 表示首次启动时将在屏幕中间
 };
 
 const loadAppData = (): AppData => {
@@ -216,10 +216,10 @@ const createWindow = () => {
 
   // 验证位置是否有效
   if (posX < 0 || posX + appData.windowSize.width > workArea.width) {
-    posX = workArea.width - appData.windowSize.width;
+    posX = Math.max(0, (workArea.width - appData.windowSize.width) / 2);
   }
   if (posY < 0 || posY + appData.windowSize.height > workArea.height) {
-    posY = 100;
+    posY = Math.max(0, (workArea.height - appData.windowSize.height) / 2);
   }
 
   mainWindow = new BrowserWindow({
