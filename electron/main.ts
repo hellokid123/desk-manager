@@ -208,12 +208,21 @@ const applyLockState = () => {
 const createWindow = () => {
   // 每次启动都在屏幕中央弹出
   const workArea = screen.getPrimaryDisplay().workAreaSize;
-  const posX = Math.max(0, (workArea.width - appData.windowSize.width) / 2);
-  const posY = Math.max(0, (workArea.height - appData.windowSize.height) / 2);
+
+  // 确保窗口大小有效
+  let windowWidth = appData.windowSize.width;
+  let windowHeight = appData.windowSize.height;
+  if (windowWidth <= 0 || windowHeight <= 0) {
+    windowWidth = 350;
+    windowHeight = 700;
+  }
+
+  const posX = Math.max(0, (workArea.width - windowWidth) / 2);
+  const posY = Math.max(0, (workArea.height - windowHeight) / 2);
 
   mainWindow = new BrowserWindow({
-    width: appData.windowSize.width,
-    height: appData.windowSize.height,
+    width: windowWidth,
+    height: windowHeight,
     x: posX,
     y: posY,
     frame: false,
@@ -414,6 +423,10 @@ ipcMain.handle('set-opacity', (event, opacity: number) => {
 });
 
 ipcMain.handle('save-app-data', (event, data: AppData) => {
+  // 保留现有的有效窗口大小，不要被无效大小覆盖
+  if (data.windowSize.width <= 0 || data.windowSize.height <= 0) {
+    data.windowSize = appData.windowSize;
+  }
   appData = data;
   isLocked = data.isLocked;
   saveAppData(data);
