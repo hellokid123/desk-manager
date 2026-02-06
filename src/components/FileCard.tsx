@@ -72,7 +72,6 @@ const FileCard: React.FC<FileCardProps> = ({ card, onRemove }) => {
                   width: '28px',
                   height: '28px',
                   objectFit: 'contain',
-                  display: imageLoaded ? 'block' : 'none',
                   imageRendering: 'crisp-edges'
                 }}
                 onError={() => {
