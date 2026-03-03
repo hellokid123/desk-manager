@@ -553,11 +553,9 @@ ipcMain.handle('get-file-icon', async (event, filePath: string) => {
       // 使用 Electron 的 getFileIcon 获取文件图标
       const icon = await app.getFileIcon(filePath, { size: 'large' });
       if (icon && !icon.isEmpty()) {
-        // 直接转换为 base64 data URL
-        const pngBuffer = icon.toPNG();
-        const base64 = pngBuffer.toString('base64');
-        const dataUrl = `data:image/png;base64,${base64}`;
-        console.log(`Got icon for ${path.basename(filePath)}, size: ${pngBuffer.length} bytes`);
+        // 使用 Electron 内置的 toDataURL 转换（Chromium 编码，处理边界情况更好）
+        const dataUrl = icon.toDataURL();
+        console.log(`Got icon for ${path.basename(filePath)}, dataUrl length: ${dataUrl.length}`);
         return dataUrl;
       }
     } catch (error) {

@@ -12,6 +12,7 @@
   - 快速标记完成（打对号并划横线）
   - 删除的任务可恢复
   - 支持任务描述和时间提醒
+  - 拖拽排序，自定义任务顺序
 - 🎨 **透明度调节**: 可自定义窗口透明度
 - 🖼️ **美观设计**: 圆润的UI设计，透明背景
 - 🎯 **可调节布局**: 文件区和待办区间可拖拽调节高度
@@ -60,6 +61,7 @@ npm run package
 - **快速添加**: 点击"+"按钮，输入任务主题和描述，自动记录当前时间
 - **编辑任务**: 点击任务内容进入编辑模式，可修改标题、时间和描述
 - **标记完成**: 点击checkbox标记完成，显示对号✓和横线
+- **拖拽排序**: 拖动任务调整顺序
 - **分类查看**:
   - **待办**: 未完成的任务
   - **已完成**: 标记完成的任务
@@ -76,15 +78,24 @@ npm run package
 
 ```
 desk-manager/
-├── electron/           # Electron主进程代码
-│   ├── main.ts        # 主进程入口
-│   ├── preload.ts     # 预加载脚本
-│   └── tsconfig.json  # TypeScript配置
-├── src/              # React应用代码
-│   ├── components/   # React组件
-│   ├── App.tsx      # 主应用组件
-│   ├── main.tsx     # React入口
-│   └── *.css        # 样式文件
+├── electron/               # Electron主进程代码
+│   ├── main.ts            # 主进程入口（窗口管理、IPC、文件操作）
+│   ├── preload.ts         # 预加载脚本（Context Bridge API）
+│   └── tsconfig.json      # TypeScript配置
+├── src/                   # React应用代码
+│   ├── components/        # React组件
+│   │   ├── TopBar.tsx     # 顶部栏（锁定、设置、关闭）
+│   │   ├── FileManager.tsx # 文件管理器
+│   │   ├── FileCard.tsx   # 文件卡片
+│   │   ├── TodoList.tsx   # 待办事项列表
+│   │   ├── TodoForm.tsx   # 待办事项输入表单
+│   │   ├── TodoItem.tsx   # 待办事项条目
+│   │   ├── SettingsPanel.tsx # 设置面板
+│   │   ├── ResizeFrame.tsx # 无边框窗口拖拽/缩放
+│   │   └── CardContainer.tsx # 卡片容器
+│   ├── App.tsx            # 主应用组件（状态管理）
+│   ├── main.tsx           # React入口
+│   └── *.css              # 样式文件
 ├── package.json
 └── vite.config.ts
 ```

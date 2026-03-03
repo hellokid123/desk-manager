@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Desk Manager is an Electron + React desktop application for Windows that combines file management and todo list features with an always-on-top widget interface. Key characteristics:
+Desk Manager is an Electron + React desktop application for Windows that combines file management and todo list features with a compact widget-style interface. Key characteristics:
 - Edge-snapping auto-hide functionality (collapses to a thin strip at screen edges)
 - Window lock feature to prevent accidental resizing
 - Resizable file/todo content split
@@ -58,11 +58,13 @@ npm run dev:electron
 **App.tsx** manages core state:
 - `isLocked`: Window resize/move lock state
 - `containers`: File manager card containers (currently single container used)
-- `todos`: Todo items with completed/deleted flags for filtering
+- `todos`: Todo items with completed/deleted flags, plus `order` field for drag-and-drop reordering
 - `transparency`: Opacity slider (0-100)
 - `fileManagerHeight`: Flex ratio for file/todo split (percentage)
+- `showSettings`: Controls settings panel visibility
+- `isInitialized`: Prevents persisting state during initial load (avoids overwriting saved data before it's loaded)
 
-All state auto-saves to disk after each change (debounced for resize/move).
+All state auto-saves to disk after each change (debounced for resize/move). The `isInitialized` flag ensures saves only begin after `loadAppData()` completes.
 
 ## Component Structure
 
@@ -167,24 +169,73 @@ Icons sourced via priority:
 
 ## Bug Fixes & Known Issues
 
-### 已解决: 文件图标无法显示问题 (File Icon Display Issue) - 2026-02-06
+### windowPosition 死代码
+- `electron/preload.ts` 中的 `AppData` 接口定义了 `windowPosition: { x: number; y: number }` 字段
+- 但主进程和渲染进程均未使用此字段（窗口每次启动都居中）
+- 属于遗留代码，可安全移除
+
+### 🔴 进行中: 拖拽文件图标无法正常显示 (2026-03-03)
 
 **问题描述**：
-- FileCard 组件收到正确的 base64 data URL（console 显示正常）
-- 但图标在UI中始终不显示
+- 从 Windows 桌面拖拽文件到窗口后，文件图标无法正常显示
+- 已多次尝试修改仍未解决
 
-**根本原因**：
-- FileCard.tsx 第75行 CSS 中 `display: imageLoaded ? 'block' : 'none'`
-- 初始状态 `imageLoaded = false`，导致 `<img>` 被设置为 `display: none`
-- 因为图片被隐藏，某些浏览器不会触发 `onLoad` 事件，陷入死循环
-- `imageLoaded` 永远保持 false，图片永久隐藏
+**根因分析 - 发现以下多个问题**：
 
-**解决方案**：
-- 移除了 `display` 属性的条件判断
-- 改用 `{!imageLoaded && <span>...</span>}` 在加载失败时显示 emoji 备用方案
-- 图片现在总是可见，加载完成后会显示，加载失败时显示备用 emoji
+#### 问题1: `get-file-icon` 文件不存在时跳过 emoji 降级（关键 bug）
+- **位置**: `electron/main.ts:546-549`
+- `fs.existsSync(filePath)` 如果返回 false，直接 `return null`
+- **完全跳过了** 567-572 行的 emoji 降级逻辑
+- 导致：文件路径异常时，图标直接为 null，FileCard 只显示默认 📄
 
-**提交**：修改 src/components/FileCard.tsx
+#### 问题2: CardContainer 的 cards 状态未接入持久化
+- **位置**: `src/components/CardContainer.tsx:19`
+- `cards` 存储在组件本地 `useState` 中，不在 App.tsx 管理
+- App.tsx 的 `containers` 只保存 `{id, name}`，不包含文件卡片数据
+- 导致：**每次重启应用，所有拖入的文件卡片全部丢失**
+
+#### 问题3: img 和 emoji 同时渲染导致视觉异常
+- **位置**: `src/components/FileCard.tsx:67-87`
+- `imageLoaded` 初始为 `false`，img 和 📄 emoji 同时出现在 flex 容器中
+- img 即使不可见也占据空间，与 emoji 并排显示
+- 如果 `app.getFileIcon()` 返回的是透明/空白图标，`onLoad` 会触发但图片视觉上为空
+
+#### 问题4: 图标顺序获取，多文件拖入时延迟累积
+- **位置**: `src/components/CardContainer.tsx:31-75`
+- `for...of` 循环中逐个 `await` 获取图标
+- 拖入 10 个文件 = 10 次串行 IPC 调用 ≈ 1-2 秒延迟
+- 应改用 `Promise.all()` 并行获取
+
+#### 问题5: Windows 路径兼容性
+- `app.getFileIcon()` 对 .lnk 快捷方式、Unicode 文件名、特殊路径可能失败
+- 代码中无 `path.normalize()` 路径规范化处理
+
+**技术栈评估**：
+- Electron 的 `app.getFileIcon()` 是对 Windows Shell API 的封装，理论上可行
+- 但 base64 data URL 经过 IPC 传输 → React 渲染的链路较长，中间环节多
+- 核心问题不是技术栈，而是错误处理和状态管理的实现细节
+- 如果 Electron 方案始终无法稳定获取图标，可考虑用原生语言（C#/WPF 或 Rust/Tauri）重构
+
+**可选修复方案（按优先级）**：
+
+| 方案 | 方法 | 改动量 | 说明 |
+|------|------|--------|------|
+| A | `nativeImage.toDataURL()` 替代手动 base64 | 1 行 | 用 Chromium 内置编码，可能处理边界情况更好 |
+| B | 自定义协议 `protocol.handle` | 中等 | 注册 `file-icon://` 协议，绕过 IPC base64，浏览器原生加载图片，Electron 官方推荐模式 |
+| C | `sharp` + `toBitmap()` 兜底 | 中等 | 已知 bug: `toPNG()` 可能返回空 buffer，但 `toBitmap()` 有效；用 sharp 转换原始像素数据 |
+| D | PowerShell `ExtractAssociatedIcon` | 小 | .NET API 可靠，能处理 .lnk，但每次 200-500ms 较慢 |
+| E | `extract-file-icon` 原生插件 | 小 | 直接调 Windows API，但包已 6 年未维护 |
+
+---
+
+**修复尝试记录**：
+
+| 次数 | 日期 | 方法 | 结果 |
+|------|------|------|------|
+| 1 | 2026-02-06 | 移除 `display: none` 条件，改用 emoji fallback | 部分修复，img onLoad 能触发了，但图标仍有异常 |
+| 2 | 2026-03-03 | 方案A: `nativeImage.toDataURL()` 替代手动 base64 | 不可行，图标仍无法正常显示 |
+
+**结论：决定用 Tauri 重构整个项目。详见 [refactor.md](./refactor.md)**
 
 ## Notes
 
@@ -192,3 +243,4 @@ Icons sourced via priority:
 - Transparent background (`transparent: true`) - background set via App.tsx inline style
 - Always-on-top disabled (`alwaysOnTop: false`) - normal window stacking
 - Context isolation enabled for security - only electronAPI exposed to renderer
+- **重构计划**：项目将从 Electron + React 迁移到 Tauri + React，详细方案见 `refactor.md`
