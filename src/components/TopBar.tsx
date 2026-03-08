@@ -1,4 +1,5 @@
 import React from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import './TopBar.css';
 
 interface TopBarProps {
@@ -9,14 +10,12 @@ interface TopBarProps {
 
 const TopBar: React.FC<TopBarProps> = ({ isLocked, onToggleLock, onOpenSettings }) => {
   const handleCloseApp = async () => {
-    if (window.electronAPI) {
-      await window.electronAPI.closeApp();
-    }
+    await invoke('close_app');
   };
 
   return (
-    <div className="top-bar">
-      <h1 className="app-title">Desk Manager</h1>
+    <div className="top-bar" data-tauri-drag-region>
+      <h1 className="app-title" data-tauri-drag-region>Desk Manager</h1>
       <div className="top-bar-buttons">
         <button
           className={`lock-button ${isLocked ? 'locked' : ''}`}

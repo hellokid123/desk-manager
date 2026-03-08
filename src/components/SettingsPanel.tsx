@@ -32,7 +32,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
               max="100"
               value={transparency}
               onInput={(e) => onTransparencyChange(Number((e.target as HTMLInputElement).value))}
-              onChange={(e) => onTransparencyChange(Number(e.target.value))}
               className="setting-slider"
             />
           </div>

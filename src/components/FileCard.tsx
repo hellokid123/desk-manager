@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import './FileCard.css';
 
 interface Card {
   id: string;
   name: string;
   type: 'file' | 'folder';
-  path?: string;
-  iconPath?: string | null;
+  path: string;
 }
 
 interface FileCardProps {
@@ -16,11 +16,15 @@ interface FileCardProps {
 
 const FileCard: React.FC<FileCardProps> = ({ card, onRemove }) => {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
-  const [imageLoaded, setImageLoaded] = useState(false);
+
+  const iconSrc =
+    card.type === 'folder'
+      ? null
+      : `http://file-icon.localhost/${encodeURIComponent(card.path)}`;
 
   const handleDoubleClick = () => {
-    if (card.path && window.electronAPI?.openPath) {
-      window.electronAPI.openPath(card.path);
+    if (card.path) {
+      invoke('open_path', { filePath: card.path });
     }
   };
 
@@ -38,7 +42,6 @@ const FileCard: React.FC<FileCardProps> = ({ card, onRemove }) => {
     e.stopPropagation();
   };
 
-  // 点击任何地方关闭菜单
   useEffect(() => {
     const handleClickOutside = () => {
       setContextMenu(null);
@@ -61,35 +64,28 @@ const FileCard: React.FC<FileCardProps> = ({ card, onRemove }) => {
       <div className="file-card-icon">
         {card.type === 'folder' ? (
           '📁'
-        ) : card.iconPath ? (
-          // 判断是否为 data URL 或 emoji
-          card.iconPath.startsWith('data:') ? (
-            <>
-              <img
-                src={card.iconPath}
-                alt={card.name}
-                style={{
-                  width: '28px',
-                  height: '28px',
-                  objectFit: 'contain',
-                  imageRendering: 'crisp-edges'
-                }}
-                onError={() => {
-                  console.error('Failed to load icon image:', card.name);
-                  setImageLoaded(false);
-                }}
-                onLoad={() => {
-                  console.log('Icon loaded successfully:', card.name);
-                  setImageLoaded(true);
-                }}
-              />
-              {!imageLoaded && <span style={{ fontSize: '18px' }}>📄</span>}
-            </>
-          ) : (
-            <span style={{ fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {card.iconPath}
-            </span>
-          )
+        ) : iconSrc ? (
+          <img
+            src={iconSrc}
+            alt={card.name}
+            style={{
+              width: '28px',
+              height: '28px',
+              objectFit: 'contain',
+              imageRendering: 'crisp-edges',
+            }}
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+              const parent = (e.target as HTMLImageElement).parentElement;
+              if (parent && !parent.querySelector('.fallback-icon')) {
+                const span = document.createElement('span');
+                span.className = 'fallback-icon';
+                span.style.fontSize = '18px';
+                span.textContent = '📄';
+                parent.appendChild(span);
+              }
+            }}
+          />
         ) : (
           '📄'
         )}
@@ -98,7 +94,6 @@ const FileCard: React.FC<FileCardProps> = ({ card, onRemove }) => {
         {card.name}
       </div>
 
-      {/* 右键菜单 */}
       {contextMenu && (
         <div
           className="file-card-context-menu"

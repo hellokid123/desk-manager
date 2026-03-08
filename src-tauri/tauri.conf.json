@@ -1,0 +1,43 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "Desk Manager",
+  "version": "1.0.0",
+  "identifier": "com.desk-manager.app",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "npm run dev:react",
+    "beforeBuildCommand": "npm run build:react"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Desk Manager",
+        "width": 350,
+        "height": 700,
+        "minWidth": 350,
+        "minHeight": 500,
+        "decorations": false,
+        "transparent": true,
+        "resizable": true,
+        "center": true,
+        "visible": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost file-icon: http://file-icon.localhost data:; style-src 'self' 'unsafe-inline'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}
